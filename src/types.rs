@@ -18,7 +18,7 @@ pub struct FinalMetadata {
 }
 
 #[marine]
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone, Deserialize)]
 pub struct Metadata {
     pub hash: String,
     pub token_key: String,
@@ -30,6 +30,12 @@ pub struct Metadata {
     pub public_key: String,
     pub version: String,
     pub loose: i64,
+}
+
+impl Metadata {
+    pub fn new() -> Self {
+        Default::default()
+    }
 }
 
 #[marine]
@@ -63,6 +69,4 @@ pub struct MetaContract {
 }
 
 #[derive(Debug, Default, Deserialize)]
-pub struct SerdeMetadata {
-  pub loose: i64,
-}
+pub struct SerdeMetadata {}

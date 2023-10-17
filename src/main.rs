@@ -49,7 +49,7 @@ pub fn on_execute(
             let content = serde_json::to_string(&tx_data).unwrap();
 
             finals.push(FinalMetadata {
-                public_key: transaction.meta_contract_id,
+                public_key: transaction.public_key,
                 alias: "".to_string(),
                 content,
                 version: transaction.version,

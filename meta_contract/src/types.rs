@@ -70,3 +70,10 @@ pub struct MetaContract {
 
 #[derive(Debug, Default, Deserialize)]
 pub struct SerdeMetadata {}
+
+#[marine]
+#[derive(Debug)]
+pub struct TxParam {
+    pub value_type: String,
+    pub value: String,
+}

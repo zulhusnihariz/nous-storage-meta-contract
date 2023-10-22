@@ -5,11 +5,21 @@ set -o errexit -o nounset -o pipefail
 cd "$(dirname "$0")"
 
 # This script builds all subprojects and puts all created Wasm modules in one dir
+echo "compiling evm_rpc..."
+cd evm_rpc
 cargo update --aggressive
 marine build --release
 
+echo "compiling meta_contract..."
+cd ../meta_contract
+cargo update --aggressive
+marine build --release
+
+cd ..
 mkdir -p artifacts
 rm -f artifacts/*.wasm
+
+cp target/wasm32-wasi/release/evm_rpc.wasm artifacts/
 cp target/wasm32-wasi/release/meta-contract.wasm artifacts/
 marine aqua artifacts/meta-contract.wasm -s meta-contract -i meta-contract > ./aqua/meta-contract.aqua
 

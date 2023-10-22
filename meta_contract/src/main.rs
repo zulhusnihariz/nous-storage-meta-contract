@@ -4,12 +4,12 @@ mod data;
 mod defaults;
 mod types;
 
-use defaults::{DEFAULT_IPFS_MULTIADDR, DEFAULT_TIMEOUT_SEC};
+use defaults::*;
 use marine_rs_sdk::marine;
 use marine_rs_sdk::module_manifest;
 use marine_rs_sdk::MountedBinaryResult;
 use marine_rs_sdk::WasmLoggerBuilder;
-use types::{FinalMetadata, MetaContract, MetaContractResult, Metadata, Transaction};
+use types::{FinalMetadata, MetaContract, MetaContractResult, Metadata, Transaction, TxParam};
 
 module_manifest!();
 
@@ -27,6 +27,15 @@ pub fn on_execute(
     transaction: Transaction,
 ) -> MetaContractResult {
     let mut finals: Vec<FinalMetadata> = vec![];
+
+    if !is_token_owner(transaction.public_key.clone(), transaction.token_id.clone()) {
+      return MetaContractResult {
+        result: false,
+        metadatas: Vec::new(),
+        error_string: "Invalid token owner".to_string(),
+      }
+    } 
+
     let serde_metadata: Result<Vec<String>, serde_json::Error> =
         serde_json::from_str(&transaction.data.clone());
 
@@ -134,6 +143,31 @@ pub fn get_timeout_string(timeout: u64) -> String {
     format!("{}s", timeout)
 }
 
+fn get_token_owner(token_id: String) -> String {
+  let mut tx_params: Vec<TxParam> = vec![];
+
+  tx_params.push(TxParam {
+    value_type: "uint".to_string(),
+    value: token_id.clone()
+  });
+
+  let token_owner = evm_read_contract(
+    DEFAULT_NODE_URL.to_string(), 
+    DEFAULT_ABI_URL.to_string(), 
+    "ownerOf".to_string(), 
+    DEFAULT_CONTRACT_ADDRESS.to_string(),
+    tx_params,
+  );
+
+  evm_shorten_hex(token_owner, 40)
+}
+
+fn is_token_owner(owner: String, token_id: String) -> bool {
+  let token_owner = get_token_owner(token_id.clone());
+
+  token_owner.to_lowercase() == owner.to_lowercase() 
+}
+
 // Service
 // - curl
 
@@ -141,6 +175,22 @@ pub fn get_timeout_string(timeout: u64) -> String {
 #[link(wasm_import_module = "host")]
 extern "C" {
     pub fn ipfs(cmd: Vec<String>) -> MountedBinaryResult;
+}
+
+#[marine]
+#[link(wasm_import_module = "evm_rpc")]
+extern "C" {
+    #[link_name = "contract_view_call"]
+    pub fn evm_read_contract(
+        node_url: String,
+        abi_url: String,
+        method_name: String,
+        contract_address: String,
+        tx_params: Vec<TxParam>,
+    ) -> String;
+
+    #[link_name = "shorten_hex"]
+    pub fn evm_shorten_hex(hex: String, to_len: u32) -> String;
 }
 
 /**
